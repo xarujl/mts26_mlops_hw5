@@ -1,0 +1,47 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: fraud-service-alerts
+    folder: Fraud monitoring
+    interval: 10s
+    rules:
+      - uid: fraud-ratio-high
+        title: Высокая доля фрода
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: {from: 60, to: 0}
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              refId: A
+              expr: fraud_ratio > 0.5
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Error
+        for: 30s
+        annotations:
+          summary: Доля транзакций, помеченных как фрод, выше 50%
+          description: Проверьте Fraud Detection Dashboard и актуальность потока.
+        labels: {severity: warning}
+      - uid: transaction-stream-stopped
+        title: Остановка потока транзакций
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: {from: 60, to: 0}
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              refId: A
+              expr: sum(rate(transactions_total[30s])) == 0
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Error
+        for: 15s
+        annotations:
+          summary: Сервис скоринга не публикует метрики транзакций
+          description: Проверьте Kafka, transaction_simulator и fraud_detector.
+        labels: {severity: critical}
